@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>QrCodeScanner.WindowsPhone</title>
+
+    <!-- WinJS references -->
+    <!-- At runtime, ui-themed.css resolves to ui-themed.theme-light.css or ui-themed.theme-dark.css 
+    based on the user’s theme setting. This is part of the MRT resource loading functionality. -->
+    <link href="/css/ui-themed.css" rel="stylesheet" />
+    <script src="//Microsoft.Phone.WinJS.2.1/js/base.js"></script>
+    <script src="//Microsoft.Phone.WinJS.2.1/js/ui.js"></script>
+
+    <!-- QrCodeScanner.Phone references -->
+    <link href="/css/default.css" rel="stylesheet" />
+    <script src="/js/default.js"></script>
+    <script src="/js/qrcode-decoder.js"></script>
+</head>
+<body class="phone">
+    <video style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; background:black"></video>
+    <!--div style="position: absolute; left: 0; top: 50%; width: 100%; height: 3px; background: red"></!-div-->
+    <div data-win-control="WinJS.UI.Repeater" data-win-options="{data:App.codes}" style="position: absolute; left: 0; top: 0; width: 100%; height:100%; overflow-y:auto">
+        <h3 data-win-bind="textContent:code"></h3>
+    </div>
+    <button style="position: absolute; right: 0; bottom: 0; display: block; margin: 20px">Cancel</button>
+    <button style="position: absolute; right: left; bottom: 0; display: block; margin: 20px" onclick="App.lastCode = null;App.codes.splice(0, App.codes.length)">Reset</button>
+</body>
+</html>

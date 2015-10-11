@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/2010/manifest" xmlns:m2="http://schemas.microsoft.com/appx/2013/manifest">
+
+  <Identity
+    Name="0ee93e93-29ad-44c3-bc43-c6aeb47a3c95"
+    Version="1.0.0.0"
+    Publisher="CN=philk_000" />
+
+  <Properties>
+    <DisplayName>QrCodeScanner.Windows</DisplayName>
+    <PublisherDisplayName>philk_000</PublisherDisplayName>
+    <Logo>images\storelogo.png</Logo>
+  </Properties>
+
+  <Prerequisites>
+    <OSMinVersion>6.3.0</OSMinVersion>
+    <OSMaxVersionTested>6.3.0</OSMaxVersionTested>
+  </Prerequisites>
+
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+
+  <Applications>
+    <Application 
+      Id="App"
+      StartPage="default.html">
+
+      <m2:VisualElements
+        DisplayName="QrCodeScanner.Windows"
+        Description="QrCodeScanner.Windows"
+        ForegroundText="light"
+        BackgroundColor="#464646"
+        Square150x150Logo="images\Logo.png"
+        Square30x30Logo="images\SmallLogo.png">
+
+        <m2:SplashScreen Image="images\splashscreen.png" />
+
+      </m2:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+  </Capabilities>
+  
+<Extensions>
+  <Extension Category = "windows.activatableClass.inProcessServer">
+    <InProcessServer>
+      <Path>org.zxing.Windows.dll</Path>
+      <ActivatableClass ActivatableClassId = "BarcodeReader" ThreadingModel = "both" />
+    </InProcessServer>
+  </Extension>
+</Extensions>
+
+</Package>
