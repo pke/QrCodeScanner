@@ -48,7 +48,18 @@
                 captureSettings.videoDeviceId = deviceId;
                 captureSettings.photoCaptureSource = Windows.Media.Capture.PhotoCaptureSource.videoPreview;
                 capture.initializeAsync(captureSettings).done(function () {
-                    var controller = capture.videoDeviceController;
+                var controller = capture.videoDeviceController;
+
+                if (controller.flashControl.assistantLightEnabledSupported) {
+                  controller.flashControl.assistantLightEnabled = false;
+                }
+                if (controller.flashControl.supported) {
+                  controller.flashControl.auto = false;
+                  controller.flashControl.enabled = false;
+                }
+                if (controller.flashControl.powerSupported) {
+                  controller.flashControl.power = 0;
+                }
 
                     if (controller.focusControl && controller.focusControl.supported) {
                         var refocus = function () {
@@ -59,6 +70,7 @@
                             }).then(null, function () { });
                         }
 
+                        //controller.focusControl.setPresetAsync(Windows.Media.Devices.FocusPreset.autoMacro);
                         if (controller.focusControl.configure) {                            
                             var focusConfig = new Windows.Media.Devices.FocusSettings();
                             focusConfig.autoFocusRange = Windows.Media.Devices.AutoFocusRange.macro;
@@ -70,13 +82,13 @@
                                 focusConfig.mode = Windows.Media.Devices.FocusMode.continuous;
                             } else if (supportAutoFocus) {
                                 focusConfig.mode = Windows.Media.Devices.FocusMode.auto;
-                                //refocus();
+                                refocus();
                             } else {
-                                //refocus();
+                                refocus();
                             }
 
                             controller.focusControl.configure(focusConfig);
-                            controller.focusControl.focusAsync();
+                            //controller.focusControl.focusAsync();
                         }
                     }
 
