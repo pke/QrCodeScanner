@@ -1,9 +1,9 @@
 ﻿#include "pch.h"
-#include "lib\zxing-all-in-one.h"
 #include "MultiFormatReader.h"
 
 #include "BaseFilter.h"
 
+#include <wrl\client.h>
 #include <wrl\event.h>
 
 #include "WinRTBufferOnMF2DBuffer.h"
@@ -162,8 +162,7 @@ Microsoft::WRL::ComPtr<IMFTransform> CreateVideoProcessor() {
 
 	Microsoft::WRL::ComPtr<IMFTransform> processor;
 	unsigned int n = 0;
-	while (true)
-	{
+	while (true) {
 		GUID category;
 		Microsoft::WRL::ComPtr<IMFTransform> transform;
 		CHK(sourceReader->GetTransformForStream((DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM, n, &category, &transform));
@@ -201,17 +200,6 @@ public:
 		return Video1in1outEffect::RuntimeClassInitialize();
 	}
 
-	virtual void Initialize(_In_ Windows::Foundation::Collections::IMap<Platform::String^, Platform::Object^>^ props) override {
-		CHKNULL(props);
-		_length = 640; //(unsigned int)props->Lookup(L"Length");
-		_oncode = (org::zxing::OnCodeHandler^)props->Lookup(L"oncode");
-		//_analyzer = (org::zxing::BitmapVideoAnalyzer^)props->Lookup(L"Analyzer");
-		//NT_ASSERT((_colorMode == ColorMode::Bgra8888) || (_colorMode == ColorMode::Yuv420Sp) || (_colorMode == ColorMode::Gray8));
-		_outputSubtype = MFVideoFormat_NV12; // Gray8 maps to NV12 in MF
-	}
-
-	org::zxing::OnCodeHandler^ _oncode;
-	
 	// Format management
 	virtual std::vector<unsigned long> GetSupportedFormats() const override {
 		std::vector<unsigned long> formats;
@@ -250,8 +238,7 @@ private:
 };
 ActivatableClass(LumiaAnalyzer);
 
-void LumiaAnalyzer::StartStreaming(_In_ unsigned long /*format*/, _In_ unsigned int width, _In_ unsigned int height)
-{
+void LumiaAnalyzer::StartStreaming(_In_ unsigned long /*format*/, _In_ unsigned int width, _In_ unsigned int height) {
 	auto lock = _analyzerLock.LockExclusive();
 
 	// Isotropic scaling
@@ -273,28 +260,24 @@ void LumiaAnalyzer::StartStreaming(_In_ unsigned long /*format*/, _In_ unsigned 
 
 	// Set the input/output formats
 	bool useGraphicsDevice = (_deviceManager != nullptr);
-	if (useGraphicsDevice)
-	{
+	if (useGraphicsDevice) {
 		CHK(_processor->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(_deviceManager.Get())));
 
 		HRESULT hrOutput = S_OK;
 		HRESULT hrInput = _processor->SetInputType(0, _inputType.Get(), 0);
-		if (SUCCEEDED(hrInput))
-		{
+		if (SUCCEEDED(hrInput))	{
 			hrOutput = _processor->SetOutputType(0, outputType.Get(), 0);
 		}
 
 		// Fall back on software if media types were rejected
-		if (FAILED(hrInput) || FAILED(hrOutput))
-		{
+		if (FAILED(hrInput) || FAILED(hrOutput)) {
 			useGraphicsDevice = false;
 		}
 	}
-	if (!useGraphicsDevice)
-	{
-		CHK(_processor->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, 0));
 
-		CHK(_processor->SetInputType(0, _inputType.Get(), 0));
+	if (!useGraphicsDevice) {
+		CHK(_processor->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, 0));
+    CHK(_processor->SetInputType(0, _inputType.Get(), 0));
 		CHK(_processor->SetOutputType(0, outputType.Get(), 0));
 	}
 }
@@ -309,7 +292,7 @@ static Platform::String^ charToPlatformString(const std::string& stdString) {
 void LumiaAnalyzer::ProcessSample(_In_ const Microsoft::WRL::ComPtr<IMFSample>& sample) {
 	// Ignore current sample if still processing the previous one
 	if (InterlockedExchange(&_processingSample, true)) {
-		return;
+		//return;
 	}
 
 	// Run async to reduce impact on video stream
@@ -319,7 +302,7 @@ void LumiaAnalyzer::ProcessSample(_In_ const Microsoft::WRL::ComPtr<IMFSample>& 
 		sample->GetSampleTime(&time);
 
 		Microsoft::WRL::ComPtr<IMFMediaBuffer> inputBuffer;
-		CHK(sample->GetBufferByIndex(0, &inputBuffer));
+    CHK(sample->GetBufferByIndex(0, &inputBuffer));
 		Microsoft::WRL::ComPtr<IMFMediaBuffer> outputBuffer = _ConvertBuffer(inputBuffer);
 
 		// Create IBuffer wrappers
@@ -340,7 +323,7 @@ void LumiaAnalyzer::ProcessSample(_In_ const Microsoft::WRL::ComPtr<IMFSample>& 
 		::zxing::BinaryBitmap *bb = new ::zxing::BinaryBitmap(bz);
 		::zxing::Ref<::zxing::BinaryBitmap> ref(bb);
 		try {
-			auto result = reader.decode(ref, /*::zxing::DecodeHints::BARCODEFORMAT_QR_CODE_HINT + */::zxing::DecodeHints::TRYHARDER_HINT);
+			auto result = reader.decode(ref, ::zxing::DecodeHints::BARCODEFORMAT_QR_CODE_HINT + ::zxing::DecodeHints::TRYHARDER_HINT);
 			if (result && result->count() > 0) {
 				auto text = result->getText()->getText();
 				auto format = result->getBarcodeFormat();
@@ -392,7 +375,7 @@ Microsoft::WRL::ComPtr<IMFMediaBuffer> LumiaAnalyzer::_ConvertBuffer(
 	_In_ const Microsoft::WRL::ComPtr<IMFMediaBuffer>& inputBuffer
 	) const
 {
-	//Logger.LumiaAnalyzer_ConvertStart((void*)this, _processor.Get());
+  //Logger.LumiaAnalyzer_ConvertStart((void*)this, _processor.Get());
 
 	// Create the input MF sample
 	Microsoft::WRL::ComPtr<IMFSample> inputSample;
@@ -441,54 +424,3 @@ using concurrency::cancellation_token;
 using concurrency::create_task;
 using concurrency::task_continuation_context;
 
-org::zxing::MultiFormatReader::MultiFormatReader() : dispatcher(Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher) {
-}
-
-Windows::Foundation::IAsyncAction^ org::zxing::MultiFormatReader::ReadAsync(Windows::Media::Capture::MediaCapture^ capture, int width, int height, OnCodeHandler^ callback) {
-#if 1
-	Windows::Foundation::Collections::IPropertySet^ properties = ref new Windows::Foundation::Collections::PropertySet();
-	properties->Insert(ref new Platform::String(L"oncode"), callback);
-	return capture->AddEffectAsync(Windows::Media::Capture::MediaStreamType::VideoPreview, L"BarcodeReader", properties);
-#else
-	Platform::Details::Console::WriteLine()
-		Windows::Foundation::Collections::IPropertySet^ properties = ref new Windows::Foundation::Collections::PropertySet();
-	// 848
-	properties->Insert(L"Length", Windows::Foundation::PropertyValue::CreateInt32(width));
-	auto task = concurrency::create_task<Platform::String^>(capture->AddEffectAsync(Windows::Media::Capture::MediaStreamType::VideoPreview, L"BarcodeReader", nullptr)).then([]() {
-	});
-	return concurrency::create_task<void>(capture->AddEffectAsync(Windows::Media::Capture::MediaStreamType::VideoPreview, L"BarcodeReader", nullptr)).then([]() {
-	});
-	//return capture->AddEffectAsync(Windows::Media::Capture::MediaStreamType::VideoPreview, L"BarcodeReader", nullptr);
-
-	return concurrency::create_async([pixels, width, height](cancellation_token cancellationToken) -> Platform::String^ {
-		/*auto encodingProperties = Windows::Media::MediaProperties::ImageEncodingProperties::CreateBmp();
-		encodingProperties->Width = width;
-		encodingProperties->Height = height;*/
-		
-		/*auto imageStream = ref new Windows::Storage::Streams::InMemoryRandomAccessStream();
-		while (!concurrency::is_task_cancellation_requested()) {
-			auto runner = create_task(capture->CapturePhotoToStreamAsync(encodingProperties, imageStream)).then([imageStream]() {
-				return concurrency::task<bool>(imageStream->FlushAsync());
-			}).then([imageStream, reader]() {
-				return concurrency::task<Windows::Graphics::Imaging::BitmapDecoder^>(Windows::Graphics::Imaging::BitmapDecoder::CreateAsync(imageStream));
-			}).then([imageStream, reader](Windows::Graphics::Imaging::BitmapDecoder^ decoder) {
-				return concurrency::task<Windows::Graphics::Imaging::PixelDataProvider^>(decoder->GetPixelDataAsync(Windows::Graphics::Imaging::BitmapPixelFormat::Rgba8,
-					Windows::Graphics::Imaging::BitmapAlphaMode::Ignore,
-					ref new Windows::Graphics::Imaging::BitmapTransform(),
-					Windows::Graphics::Imaging::ExifOrientationMode::IgnoreExifOrientation,
-					Windows::Graphics::Imaging::ColorManagementMode::DoNotColorManage));
-			}).then([imageStream, width, height, reader](Windows::Graphics::Imaging::PixelDataProvider^ pixels) {
-				::zxing::Ref<LuminanceSource> imageRef(LuminanceSource(pixels, width, height));
-				::zxing::GlobalHistogramBinarizer *binz = new ::zxing::GlobalHistogramBinarizer(imageRef);
-				::zxing::Ref<::zxing::Binarizer> bz(binz);
-				::zxing::BinaryBitmap *bb = new ::zxing::BinaryBitmap(bz);
-				::zxing::Ref<::zxing::BinaryBitmap> ref(bb);
-				return reader.decode(ref);
-			});
-			auto result = runner.get();
-			result.getText();
-		}
-		concurrency::cancel_current_task();*/
-	});		
-#endif
-}
