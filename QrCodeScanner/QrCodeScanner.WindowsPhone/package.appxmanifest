@@ -32,7 +32,7 @@
     <Extension Category = "windows.activatableClass.inProcessServer">
       <InProcessServer>
         <Path>org.zxing.WindowsPhone.dll</Path>
-        <ActivatableClass ActivatableClassId = "org.zxing.QRCodeFilter" ThreadingModel = "both" />
+        <ActivatableClass ActivatableClassId = "org.zxing.BarcodeFilter" ThreadingModel = "both" />
       </InProcessServer>
     </Extension>
   </Extensions>

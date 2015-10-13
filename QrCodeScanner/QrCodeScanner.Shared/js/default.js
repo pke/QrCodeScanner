@@ -10,7 +10,7 @@
         codes: new WinJS.Binding.List(),
         lastCode: null
     })
-    
+
     app.onactivated = function (args) {
         if (args.detail.kind === activation.ActivationKind.launch) {
             if (args.detail.previousExecutionState !== activation.ApplicationExecutionState.terminated) {
@@ -42,24 +42,17 @@
                 });
                 return deviceId;
             }).then(function (deviceId) {
-                capture = new Windows.Media.Capture.MediaCapture();                
+                capture = new Windows.Media.Capture.MediaCapture();
                 var captureSettings = new Windows.Media.Capture.MediaCaptureInitializationSettings();
                 captureSettings.streamingCaptureMode = Windows.Media.Capture.StreamingCaptureMode.video;
                 captureSettings.videoDeviceId = deviceId;
                 captureSettings.photoCaptureSource = Windows.Media.Capture.PhotoCaptureSource.videoPreview;
                 capture.initializeAsync(captureSettings).done(function () {
-                var controller = capture.videoDeviceController;
+                    var controller = capture.videoDeviceController;
 
-                if (controller.flashControl.assistantLightEnabledSupported) {
-                  controller.flashControl.assistantLightEnabled = false;
-                }
-                if (controller.flashControl.supported) {
-                  controller.flashControl.auto = false;
-                  controller.flashControl.enabled = false;
-                }
-                if (controller.flashControl.powerSupported) {
-                  controller.flashControl.power = 0;
-                }
+                    if (controller.flashControl.supported) {
+                        controller.flashControl.enabled = false;
+                    }
 
                     if (controller.focusControl && controller.focusControl.supported) {
                         var refocus = function () {
@@ -70,8 +63,7 @@
                             }).then(null, function () { });
                         }
 
-                        //controller.focusControl.setPresetAsync(Windows.Media.Devices.FocusPreset.autoMacro);
-                        if (controller.focusControl.configure) {                            
+                        if (controller.focusControl.configure) {
                             var focusConfig = new Windows.Media.Devices.FocusSettings();
                             focusConfig.autoFocusRange = Windows.Media.Devices.AutoFocusRange.macro;
 
@@ -88,7 +80,6 @@
                             }
 
                             controller.focusControl.configure(focusConfig);
-                            //controller.focusControl.focusAsync();
                         }
                     }
 
@@ -112,13 +103,6 @@
                             capturePreview.msZoom = true;
                         }
 
-                        capturePreview.src = URL.createObjectURL(capture);
-                        capturePreview.play();
-                                                
-                        var encodingProperties = Windows.Media.MediaProperties.ImageEncodingProperties.createBmp();
-                        encodingProperties.width = maxResProps.width;
-                        encodingProperties.height = maxResProps.height;
-
                         var oncode, lastCode;
                         org.zxing.MultiFormatReader.addEventListener("oncode", oncode = function (event) {
                             //org.zxing.MultiFormatReader.removeEventListener("oncode", oncode);
@@ -130,9 +114,19 @@
                             }
                             //stopCapture();
                         });
-                        capture.addEffectAsync(Windows.Media.Capture.MediaStreamType.videoPreview, "org.zxing.QRCodeFilter", null);
+                        var definition = org.zxing.MultiFormatReaderDefinition(org.zxing.BarcodeFormat.qrCode || org.zxing.BarcodeFormat.dataMatrix, function (code) {
+                            Windows.Phone.Devices.Notification.VibrationDevice.getDefault().vibrate(4);
+                            if (code != App.lastCode) {
+                                App.codes.push({ code: code });
+                                App.lastCode = code;
+                            }
+                        });
+
+                        capture.addEffectAsync(Windows.Media.Capture.MediaStreamType.videoPreview, definition.activatableClassId, definition.properties);
+                        capturePreview.src = URL.createObjectURL(capture);
+                        capturePreview.play();
                     });
-                });        
+                });
             });
             args.setPromise(WinJS.UI.processAll());
         }
